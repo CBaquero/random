@@ -39,7 +39,7 @@ Generating randoms:
 random.unif START END
 ```
 
-while replacing these capital words for any suitable range of integer numbers. The mininum and maximum in the range are those for "double double" C types. 
+while replacing these capital words for any suitable range of integer numbers. The mininum and maximum in the range are those for "double double" C types. Make sure that START < END.
 
 * Exponential Distribution: In the command line use 
 
