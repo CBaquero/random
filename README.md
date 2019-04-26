@@ -16,7 +16,7 @@ This will creat a subdirectory named "random". Change into that directory and do
 ```
 make
 ```
-1
+ 
 This should work on macOS (until a more complete Makefile is provided) and produce a library "Random.so"
 
 Loading into Redis:
