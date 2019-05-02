@@ -195,7 +195,12 @@ int RandomHist_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
       subreply = RedisModule_CallReplyArrayElement(reply,i);
       double e;
       RedisModuleString *ele = RedisModule_CreateStringFromCallReply(subreply);
-      RedisModule_StringToDouble(ele,&e);
+      if (RedisModule_StringToDouble(ele,&e)==REDISMODULE_ERR)
+      {
+        RedisModule_FreeString(ctx,ele);
+        RedisModule_FreeCallReply(reply);
+        return RedisModule_ReplyWithError(ctx,"ERR bad list value");
+      }
       RedisModule_FreeString(ctx,ele);
       if (i==0) min=max=e;
       if (e < min) min=e;
