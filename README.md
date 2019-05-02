@@ -76,3 +76,12 @@ random.lexp foo 10
 ```
 random.lnorm bar 100 65 3.5
 ```
+
+Histograms:
+===
+
+You can check the quality of your samples by getting its histogram. The optional CELLS parameter (default of 10) states the number of desired cells. 
+
+```
+random.hist KEY [CELLS]
+```
