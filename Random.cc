@@ -1,10 +1,11 @@
 #include "redismodule.h"
 #include <random>
+#include <cmath>
 
 extern "C" {
-  int RandomUnif_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc);
+//  int RandomUnif_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc);
 
-  int RandomExp_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc);
+//  int RandomExp_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc);
 
   int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc);
 }
@@ -164,6 +165,64 @@ int RandomLExp_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
   return REDISMODULE_OK;
 }
 
+int RandomHist_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+  if (argc > 3) return RedisModule_WrongArity(ctx);
+
+  long long slots=10;
+
+  if (argc == 3) 
+  {
+    if (RedisModule_StringToLongLong(argv[2],&slots) != REDISMODULE_OK)
+      return RedisModule_ReplyWithError(ctx,"ERR invalid hist size");
+  }
+  long long hist[slots];
+  for (auto i=0; i < slots; i++) hist[i]=0;
+  RedisModuleCallReply *reply;
+  reply = RedisModule_Call(ctx,"LRANGE","scc",argv[1],"0","-1");
+
+  if (RedisModule_CallReplyType(reply) == REDISMODULE_REPLY_NULL)
+    return RedisModule_ReplyWithError(ctx,"ERR error in key");
+
+  size_t len;
+  double min=0, max=0;
+  if (RedisModule_CallReplyType(reply) == REDISMODULE_REPLY_ARRAY)
+  {
+    len = RedisModule_CallReplyLength(reply);
+    if (len == 0) return REDISMODULE_OK;
+    for (auto i=0; i < len; i++)
+    {
+      RedisModuleCallReply *subreply;
+      subreply = RedisModule_CallReplyArrayElement(reply,i);
+      double e;
+      RedisModuleString *ele = RedisModule_CreateStringFromCallReply(subreply);
+      RedisModule_StringToDouble(ele,&e);
+      RedisModule_FreeString(ctx,ele);
+      if (i==0) min=max=e;
+      if (e < min) min=e;
+      if (e > max) max=e;
+    }
+    double range=max-min;
+    for (auto i=0; i < len; i++)
+    {
+      RedisModuleCallReply *subreply;
+      subreply = RedisModule_CallReplyArrayElement(reply,i);
+      double e;
+      RedisModuleString *ele = RedisModule_CreateStringFromCallReply(subreply);
+      RedisModule_StringToDouble(ele,&e);
+      RedisModule_FreeString(ctx,ele);
+      long long slot=(long long) std::floor(((e-min)/range)*slots);
+      if (slot==slots) slot--; /* max value goes to last slot */
+      hist[slot]++;
+    }
+
+  }
+  RedisModule_FreeCallReply(reply);
+
+  RedisModule_ReplyWithArray(ctx,slots);
+  for (auto i=0; i < slots; i++)
+    RedisModule_ReplyWithLongLong(ctx,hist[i]);
+  return REDISMODULE_OK;
+}
 
 
 int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
@@ -190,7 +249,9 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         RandomLExp_RedisCommand,"random",0,0,0) == REDISMODULE_ERR)
         return REDISMODULE_ERR;
 
-
+    if (RedisModule_CreateCommand(ctx,"random.hist",
+        RandomHist_RedisCommand,"readonly",0,0,0) == REDISMODULE_ERR)
+        return REDISMODULE_ERR;
 
     return REDISMODULE_OK;
 }
