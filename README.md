@@ -56,14 +56,14 @@ random.exp
 to ask for a random from an exponential distribution (of default lambda 1). You can control the lambda by supplying any real number as LAMBDA, in 
 
 ```
-random.exp LAMBDA
+random.exp [LAMBDA]
 ```
 The exponentially distributed random numbers are returned encoded as strings. 
 
 Storing multiple randoms:
 ===
 
-The several distributions provide support for storing multiple randoms in a key as a Redis list structure. These variants have a name that append an "L" (from list) to the distribution name. The first two parameters are obligatory and indicate the KEY and COUNT. Examples:
+The several distributions provide support for storing multiple randoms in a key as a Redis list structure. These variants have a name that append an "l" (from list) to the distribution name. The first two parameters are obligatory and indicate the KEY and COUNT. Examples:
 
 * The following command stores 10 exponentially distributed random numbers in key "foo": 
 
