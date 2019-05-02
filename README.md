@@ -33,6 +33,12 @@ into the redis client command line. The reply should be "OK".
 Generating randoms:
 ===
 
+* Gaussian Distribution: This distribution has optional parameters for MEAN (default 0.0) and STDDEV (default 1.0). The command has the format
+
+```
+random.norm [MEAN] [STDDEV]
+```
+
 * Random Uniform Integers: In the redis command line you can create uniform random numbers in a given range by issuing 
 
 ```
@@ -53,3 +59,20 @@ to ask for a random from an exponential distribution (of default lambda 1). You 
 random.exp LAMBDA
 ```
 The exponentially distributed random numbers are returned encoded as strings. 
+
+Storing multiple randoms:
+===
+
+The several distributions provide support for storing multiple randoms in a key as a Redis list structure. These variants have a name that append an "L" (from list) to the distribution name. The first two parameters are obligatory and indicate the KEY and COUNT. Examples:
+
+* The following command stores 10 exponentially distributed random numbers in key "foo": 
+
+```
+random.lexp foo 10
+```
+
+* The following command generates and stores in key "bar" 100 random numbers that follow the height distribution of US women (in inches). 
+
+```
+random.lnorm bar 100 65 3.5
+```
