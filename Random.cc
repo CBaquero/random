@@ -52,7 +52,7 @@ int RandomNorm_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
 /* RANDOM.LNORM KEY COUNT [MEAN=0.0] [STDDEV=1.0] */
 int RandomLNorm_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   double mean=0.0, sd=1.0;
-  if (argc > 5) return RedisModule_WrongArity(ctx);
+  if (argc > 5 || argc < 3) return RedisModule_WrongArity(ctx);
   if (argc >= 4) /* Get mean */
   {
     if (RedisModule_StringToDouble(argv[3],&mean) != REDISMODULE_OK)
@@ -179,7 +179,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         return REDISMODULE_ERR;
 
     if (RedisModule_CreateCommand(ctx,"random.lnorm",
-        RandomLNorm_RedisCommand,"random",0,0,0) == REDISMODULE_ERR)
+        RandomLNorm_RedisCommand,"random",1,1,1) == REDISMODULE_ERR)
         return REDISMODULE_ERR;
 
     if (RedisModule_CreateCommand(ctx,"random.exp",
@@ -187,7 +187,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         return REDISMODULE_ERR;
 
     if (RedisModule_CreateCommand(ctx,"random.lexp",
-        RandomLExp_RedisCommand,"random",0,0,0) == REDISMODULE_ERR)
+        RandomLExp_RedisCommand,"random",1,1,1) == REDISMODULE_ERR)
         return REDISMODULE_ERR;
 
 
