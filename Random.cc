@@ -246,7 +246,9 @@ int RandomHist_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
   RedisModuleCallReply *reply;
   reply = RedisModule_Call(ctx,"LRANGE","scc",argv[1],"0","-1");
 
-  if (RedisModule_CallReplyType(reply) == REDISMODULE_REPLY_NULL)
+  if (RedisModule_CallReplyType(reply) == REDISMODULE_REPLY_NULL ||
+      RedisModule_CallReplyType(reply) == REDISMODULE_REPLY_ERROR || 
+      RedisModule_CallReplyType(reply) == REDISMODULE_REPLY_UNKNOWN)
     return RedisModule_ReplyWithError(ctx,"ERR error in key");
 
   size_t len;
