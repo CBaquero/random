@@ -65,6 +65,50 @@ int RandomNorm_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
   RedisModule_ReplyWithDouble(ctx, rnorm(gen));
   return REDISMODULE_OK;
 }
+/* RANDOM.LUNIF KEY COUNT START END */
+int RandomLUnif_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+  double start, end;
+  if (argc != 5) return RedisModule_WrongArity(ctx);
+  if (RedisModule_StringToDouble(argv[3],&start) != REDISMODULE_OK)
+    return RedisModule_ReplyWithError(ctx,"ERR invalid start");
+  if (RedisModule_StringToDouble(argv[4],&end) != REDISMODULE_OK)
+    return RedisModule_ReplyWithError(ctx,"ERR invalid end");
+
+  /* Open key */
+  RedisModuleKey *key = (RedisModuleKey *) RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
+ /* Key must be empty or list */
+  if ((RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_LIST &&
+       RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_EMPTY)) 
+  {
+     RedisModule_CloseKey(key);
+     return RedisModule_ReplyWithError(ctx,REDISMODULE_ERRORMSG_WRONGTYPE);
+  }
+
+  /* Get count */
+  long long count;
+  if ((RedisModule_StringToLongLong(argv[2],&count) != REDISMODULE_OK) ||
+        (count < 0)) 
+  {
+     RedisModule_CloseKey(key);
+     return RedisModule_ReplyWithError(ctx,"ERR invalid count");
+  }
+
+  /* Push count randoms */
+  std::uniform_real_distribution<double> runif(start,end);
+  while (count-- > 0)
+  {
+    RedisModuleString *ele;
+    /* Make string with the same 19 digita precision of ReplyWithDouble */
+    ele=RedisModule_CreateStringPrintf(ctx,"%.19f",runif(gen));
+    RedisModule_ListPush(key,REDISMODULE_LIST_HEAD,ele);
+    RedisModule_FreeString(ctx,ele);
+  }
+ 
+  size_t len = RedisModule_ValueLength(key);
+  RedisModule_CloseKey(key);
+  RedisModule_ReplyWithLongLong(ctx, len);
+  return REDISMODULE_OK;
+}
 
 /* RANDOM.LNORM KEY COUNT [MEAN=0.0] [STDDEV=1.0] */
 int RandomLNorm_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
@@ -182,14 +226,20 @@ int RandomLExp_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
 }
 
 int RandomHist_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-  if (argc > 3) return RedisModule_WrongArity(ctx);
+  if (argc > 4) return RedisModule_WrongArity(ctx);
 
   long long slots=10;
+  long long col=0;
 
-  if (argc == 3) 
+  if (argc >= 3) 
   {
     if (RedisModule_StringToLongLong(argv[2],&slots) != REDISMODULE_OK)
       return RedisModule_ReplyWithError(ctx,"ERR invalid hist size");
+  }
+  if (argc == 4) 
+  {
+    if (RedisModule_StringToLongLong(argv[3],&col) != REDISMODULE_OK)
+      return RedisModule_ReplyWithError(ctx,"ERR invalid columns size");
   }
   long long hist[slots];
   for (auto i=0; i < slots; i++) hist[i]=0;
@@ -240,8 +290,23 @@ int RandomHist_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
   RedisModule_FreeCallReply(reply);
 
   RedisModule_ReplyWithArray(ctx,slots);
-  for (auto i=0; i < slots; i++)
-    RedisModule_ReplyWithLongLong(ctx,hist[i]);
+  if (col==0)
+  {
+    for (auto i=0; i < slots; i++)
+      RedisModule_ReplyWithLongLong(ctx,hist[i]);
+  }
+  else
+  {
+    char s[col];
+    for (auto i=0; i < col; i++)
+      s[i] = {'*'};
+    double hmax=hist[0];
+    for (auto i=0; i < slots; i++)
+      if (hmax < hist[i]) 
+        hmax = hist[i];
+    for (auto i=0; i < slots; i++)
+      RedisModule_ReplyWithStringBuffer(ctx,s,std::floor(((double) hist[i])/hmax*col));
+  }
   return REDISMODULE_OK;
 }
 
@@ -256,6 +321,10 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
 
     if (RedisModule_CreateCommand(ctx,"random.unif",
         RandomUnif_RedisCommand,"readonly random",0,0,0) == REDISMODULE_ERR)
+        return REDISMODULE_ERR;
+
+    if (RedisModule_CreateCommand(ctx,"random.lunif",
+        RandomLUnif_RedisCommand,"random",0,0,0) == REDISMODULE_ERR)
         return REDISMODULE_ERR;
 
     if (RedisModule_CreateCommand(ctx,"random.norm",

@@ -90,7 +90,8 @@ Histograms:
 ===
 
 You can check the quality of your samples by getting its histogram. The optional CELLS parameter (default of 10) states the number of desired cells. 
+If the optional COLUMNS parameter is provided, the reply will show ASCII bars for each cell filled with '*', and where COLUMNS states the widest bar.
 
 ```
-random.hist KEY [CELLS]
+random.hist KEY [CELLS] [COLUMNS]
 ```
