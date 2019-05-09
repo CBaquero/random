@@ -14,8 +14,8 @@ extern "C" {
 std::random_device rd;
 std::mt19937 gen(rd());
 
-/* RANDOM.UNIF START END */
-int RandomUnif_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+/* RANDOM.DUNIF START END */
+int RandomDUnif_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   if (argc != 3) return RedisModule_WrongArity(ctx);
   long long start, end;
   if (
@@ -25,8 +25,24 @@ int RandomUnif_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
       ) 
     return RedisModule_ReplyWithError(ctx,"ERR invalid range");
 
-  std::uniform_int_distribution<long long> runif(start,end);
-  RedisModule_ReplyWithLongLong(ctx,runif(gen));
+  std::uniform_int_distribution<long long> rdunif(start,end);
+  RedisModule_ReplyWithLongLong(ctx,rdunif(gen));
+  return REDISMODULE_OK;
+}
+
+/* RANDOM.UNIF START END */
+int RandomUnif_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+  if (argc != 3) return RedisModule_WrongArity(ctx);
+  double start, end;
+  if (
+      (RedisModule_StringToDouble(argv[1],&start) != REDISMODULE_OK) ||
+      (RedisModule_StringToDouble(argv[2],&end) != REDISMODULE_OK) ||
+      (start > end) 
+      ) 
+    return RedisModule_ReplyWithError(ctx,"ERR invalid range");
+
+  std::uniform_real_distribution<double> runif(start,end);
+  RedisModule_ReplyWithDouble(ctx,runif(gen));
   return REDISMODULE_OK;
 }
 
@@ -233,6 +249,10 @@ int RandomHist_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
 int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (RedisModule_Init(ctx,"random",1,REDISMODULE_APIVER_1)
         == REDISMODULE_ERR) return REDISMODULE_ERR;
+
+    if (RedisModule_CreateCommand(ctx,"random.dunif",
+        RandomDUnif_RedisCommand,"readonly random",0,0,0) == REDISMODULE_ERR)
+        return REDISMODULE_ERR;
 
     if (RedisModule_CreateCommand(ctx,"random.unif",
         RandomUnif_RedisCommand,"readonly random",0,0,0) == REDISMODULE_ERR)

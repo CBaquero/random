@@ -39,13 +39,22 @@ Generating randoms:
 random.norm [MEAN] [STDDEV]
 ```
 
-* Random Uniform Integers: In the redis command line you can create uniform random numbers in a given range by issuing 
+* Discrete Uniform Distribution: In the redis command line you can create uniform random integers in a given range by issuing 
+
+```
+random.dunif START END
+```
+
+while replacing these capital words for any suitable range of integer numbers. The mininum and maximum in the range are those for "long long" C types. Make sure that START <= END.
+
+* Uniform Distribution: In the redis command line you can create uniform random real numbers in a given range by issuing 
 
 ```
 random.unif START END
 ```
 
-while replacing these capital words for any suitable range of integer numbers. The mininum and maximum in the range are those for "double double" C types. Make sure that START < END.
+while replacing these capital words for any suitable range of real numbers. The mininum and maximum in the range are those for "double" C types. Make sure that START <= END.
+
 
 * Exponential Distribution: In the command line use 
 
