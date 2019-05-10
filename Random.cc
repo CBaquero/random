@@ -241,22 +241,39 @@ int RandomHist_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int a
     if (RedisModule_StringToLongLong(argv[3],&col) != REDISMODULE_OK)
       return RedisModule_ReplyWithError(ctx,"ERR invalid columns size");
   }
+
+  /* Check key type */
+  RedisModuleKey * key = ( RedisModuleKey *) 
+    RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
+  if (RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_LIST)
+  {
+    RedisModule_CloseKey(key);
+    return RedisModule_ReplyWithError(ctx,"ERR key not of List type");
+  }
+  RedisModule_CloseKey(key);
+
   long long hist[slots];
   for (auto i=0; i < slots; i++) hist[i]=0;
   RedisModuleCallReply *reply;
   reply = RedisModule_Call(ctx,"LRANGE","scc",argv[1],"0","-1");
 
   if (RedisModule_CallReplyType(reply) == REDISMODULE_REPLY_NULL ||
-      RedisModule_CallReplyType(reply) == REDISMODULE_REPLY_ERROR || 
-      RedisModule_CallReplyType(reply) == REDISMODULE_REPLY_UNKNOWN)
+      RedisModule_CallReplyType(reply) == REDISMODULE_REPLY_ERROR )
+  {
+    RedisModule_FreeCallReply(reply);
     return RedisModule_ReplyWithError(ctx,"ERR error in key");
+  }
 
   size_t len;
   double min=0, max=0;
   if (RedisModule_CallReplyType(reply) == REDISMODULE_REPLY_ARRAY)
   {
     len = RedisModule_CallReplyLength(reply);
-    if (len == 0) return REDISMODULE_OK;
+    if (len == 0)
+    {
+      RedisModule_FreeCallReply(reply);
+      return REDISMODULE_OK;
+    }
     for (auto i=0; i < len; i++)
     {
       RedisModuleCallReply *subreply;
